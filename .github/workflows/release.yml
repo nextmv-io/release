@@ -50,6 +50,9 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      SHOULD_NOTIFY_SLACK: ${{ steps.set-outputs.outputs.SHOULD_NOTIFY_SLACK }}
+      VERSION: ${{ steps.set-outputs.outputs.VERSION }}
     env:
       GH_TOKEN: ${{ github.token }}
       SSH_AUTH_SOCK: /tmp/ssh_agent.sock
@@ -211,8 +214,16 @@ jobs:
         with:
           packages-dir: ./${{ inputs.REPOSITORY }}/${{ inputs.PACKAGE_LOCATION }}/dist
 
-      - name: notify slack
-        if: ${{ env.RELEASE_NEEDED == 'true' && env.IS_DEV_TAG == 'false' }}
+      - name: set job outputs
+        id: set-outputs
         run: |
-          export DATA="{\"text\":\"Release notification - ${{ inputs.PACKAGE_NAME }} ${{ env.VERSION }} (see <https://github.com/nextmv-io/${{ inputs.REPOSITORY }}/releases/${{ env.VERSION }}|release notes>)\"}"
-          curl -X POST -H 'Content-type: application/json' --data "$DATA" ${{ secrets.SLACK_URL_MISSION_CONTROL }}
+          echo "VERSION=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+
+          # Set SHOULD_NOTIFY_SLACK based on release needed and stable version
+          if [ "${{ env.RELEASE_NEEDED }}" = "true" ] && [ "${{ env.IS_DEV_TAG }}" = "false" ]; then
+            echo "We need to notify slack"
+            echo "SHOULD_NOTIFY_SLACK=true" >> $GITHUB_OUTPUT
+          else
+            echo "We don't need to notify slack"
+            echo "SHOULD_NOTIFY_SLACK=false" >> $GITHUB_OUTPUT
+          fi

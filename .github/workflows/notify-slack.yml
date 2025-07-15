@@ -1,0 +1,31 @@
+name: notify-slack
+run-name: Notify Slack for ${{ inputs.PACKAGE_NAME }} ${{ inputs.VERSION }} release
+
+on:
+  workflow_call:
+    inputs:
+      PACKAGE_NAME:
+        type: string
+        description: The name of the package that was released
+        required: true
+      VERSION:
+        type: string
+        description: The version that was released
+        required: true
+      REPOSITORY:
+        type: string
+        description: The repository name
+        required: true
+    secrets:
+      SLACK_URL_MISSION_CONTROL:
+        description: The URL of the Slack channel to send the release notification to
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: notify slack
+        run: |
+          export DATA="{\"text\":\"Release notification - ${{ inputs.PACKAGE_NAME }} ${{ inputs.VERSION }} (see <https://github.com/nextmv-io/${{ inputs.REPOSITORY }}/releases/${{ inputs.VERSION }}|release notes>)\"}"
+          curl -X POST -H 'Content-type: application/json' --data "$DATA" ${{ secrets.SLACK_URL_MISSION_CONTROL }}
