@@ -12,14 +12,6 @@ on:
         type: string
         description: The repository name
         required: true
-      ENVIRONMENT_NAME:
-        type: string
-        description: The environment to release to
-        required: true
-      ENVIRONMENT_URL:
-        type: string
-        description: The URL of the environment to release to
-        required: true
       LANGUAGE:
         type: string
         description: The language of the repository
@@ -75,9 +67,6 @@ jobs:
     permissions:
       contents: write # Required for creating releases and tags
       id-token: write # This is required for trusted publishing to PyPI
-    environment:
-      name: ${{ inputs.ENVIRONMENT_NAME }}
-      url: ${{ inputs.ENVIRONMENT_URL }}
     steps:
       - name: configure git with the bot credentials
         run: |
