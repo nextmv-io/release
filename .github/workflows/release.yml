@@ -36,6 +36,16 @@ on:
         type: string
         description: The file that contains the version
         required: true
+    secrets:
+      SLACK_URL_MISSION_CONTROL:
+        description: The URL of the Slack channel to send the release notification to
+        required: true
+      NEXTMVBOT_SSH_KEY:
+        description: The SSH key for the nextmv-bot user
+        required: true
+      NEXTMVBOT_SIGNING_KEY:
+        description: The signing key for the nextmv-bot user
+        required: true
 
 jobs:
   release:
