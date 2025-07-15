@@ -101,7 +101,7 @@ jobs:
           FILTERS_FILE="./.github/filters.yml"
           touch $FILTERS_FILE
           echo "${{ inputs.PACKAGE_NAME }}:
-            - '${{ inputs.PACKAGE_LOCATION }}/${{ inputs.VERSION_FILE }}'" >> $FILTERS_FILE
+            - '${{ inputs.PACKAGE_LOCATION }}/${{ inputs.PACKAGE_NAME }}/${{ inputs.VERSION_FILE }}'" >> $FILTERS_FILE
 
           echo "Successfully created filters and wrote them to ${FILTERS_FILE}"
           cat $FILTERS_FILE
