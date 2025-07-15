@@ -203,17 +203,6 @@ jobs:
           --title $VERSION $PRERELEASE_FLAG
         working-directory: ./${{ inputs.REPOSITORY }}
 
-      - name: python - build binary wheel and source tarball
-        if: ${{ env.RELEASE_NEEDED == 'true' && inputs.LANGUAGE == 'python' }}
-        run: python -m build
-        working-directory: ./${{ inputs.REPOSITORY }}/${{ inputs.PACKAGE_LOCATION }}
-
-      - name: python - publish package distributions to PyPI
-        if: ${{ env.RELEASE_NEEDED == 'true' && inputs.LANGUAGE == 'python' }}
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: ./${{ inputs.REPOSITORY }}/${{ inputs.PACKAGE_LOCATION }}/dist
-
       - name: set job outputs
         id: set-outputs
         run: |
