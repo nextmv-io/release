@@ -1,5 +1,5 @@
 name: release
-run-name: Release ${{ inputs.BRANCH }} by @${{ github.actor }} from ${{ inputs.BRANCH }}
+run-name: Release ${{ inputs.PACKAGE_NAME }} by @${{ github.actor }} from ${{ inputs.REPOSITORY }}/${{ inputs.BRANCH }}
 
 on:
   workflow_call:
