@@ -177,6 +177,7 @@ jobs:
 
           echo "RELEASE_NEEDED=true" >> $GITHUB_ENV
           echo "Release is needed"
+        working-directory: ./${{ inputs.REPOSITORY }}
 
       - name: tag new version
         if: ${{ env.RELEASE_NEEDED == 'true' }}
