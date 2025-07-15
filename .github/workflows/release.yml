@@ -66,7 +66,6 @@ jobs:
       MAIN_BRANCH: develop
     permissions:
       contents: write # Required for creating releases and tags
-      id-token: write # This is required for trusted publishing to PyPI
     steps:
       - name: configure git with the bot credentials
         run: |
