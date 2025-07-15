@@ -1,0 +1,207 @@
+name: release
+run-name: Release ${{ inputs.BRANCH }} by @${{ github.actor }} from ${{ inputs.BRANCH }}
+
+on:
+  workflow_call:
+    inputs:
+      BRANCH:
+        type: string
+        description: The branch that triggered the workflow
+        required: true
+      REPOSITORY:
+        type: string
+        description: The repository name
+        required: true
+      ENVIRONMENT_NAME:
+        type: string
+        description: The environment to release to
+        required: true
+      ENVIRONMENT_URL:
+        type: string
+        description: The URL of the environment to release to
+        required: true
+      LANGUAGE:
+        type: string
+        description: The language of the repository
+        required: true
+      PACKAGE_NAME:
+        type: string
+        description: The name of the package to release
+        required: true
+      PACKAGE_LOCATION:
+        type: string
+        description: The location of the package to release
+        required: true
+      VERSION_FILE:
+        type: string
+        description: The file that contains the version
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+      RELEASE_NEEDED: true
+      IS_DEV_TAG: true
+      PYTHON_VERSION: 3.13
+      VERSION: ""
+      MAIN_BRANCH: develop
+    permissions:
+      contents: write # Required for creating releases and tags
+      id-token: write # This is required for trusted publishing to PyPI
+    environment:
+      name: ${{ inputs.ENVIRONMENT_NAME }}
+      url: ${{ inputs.ENVIRONMENT_URL }}
+    steps:
+      - name: configure git with the bot credentials
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add - <<< "${{ secrets.NEXTMVBOT_SSH_KEY }}"
+
+          echo "${{ secrets.NEXTMVBOT_SIGNING_KEY }}" > ~/.ssh/signing.key
+          chmod 600 ~/.ssh/signing.key
+
+          git config --global user.name "nextmv-bot"
+          git config --global user.email "tech+gh-nextmv-bot@nextmv.io"
+          git config --global gpg.format ssh
+          git config --global user.signingkey ~/.ssh/signing.key
+
+          git clone git@github.com:nextmv-io/${{ inputs.REPOSITORY }}.git
+          cd ${{ inputs.REPOSITORY }}
+          git switch ${{ inputs.BRANCH }}
+
+      - name: python - set up
+        if: ${{ inputs.LANGUAGE == 'python' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: python - install dependencies
+        if: ${{ inputs.LANGUAGE == 'python' }}
+        run: |
+          pip install --upgrade pip
+          pip install build hatch
+
+      - name: set filters file for changed paths
+        run: |
+          FILTERS_FILE="./.github/filters.yml"
+          touch $FILTERS_FILE
+          echo "${{ inputs.PACKAGE_NAME }}:
+            - '${{ inputs.PACKAGE_LOCATION }}/${{ inputs.VERSION_FILE }}'" >> $FILTERS_FILE
+
+          echo "Successfully created filters and wrote them to ${FILTERS_FILE}"
+          cat $FILTERS_FILE
+        working-directory: ./${{ inputs.REPOSITORY }}
+
+      - name: filter changed directories
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: .github/filters.yml
+          working-directory: ./${{ inputs.REPOSITORY }}
+
+      - name: go - set the version
+        if: ${{ inputs.LANGUAGE == 'go' }}
+        run: |
+          export VERSION="$(cat VERSION)"
+          echo "This is the version"
+          echo $VERSION
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+        working-directory: ./${{ inputs.REPOSITORY }}
+
+      - name: python - set the version
+        if: ${{ inputs.LANGUAGE == 'python' }}
+        run: |
+          export VERSION="v$(hatch version)"
+          echo "This is the version"
+          echo $VERSION
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+        working-directory: ./${{ inputs.REPOSITORY }}
+
+      - name: set IS_DEV_TAG flag
+        run: |
+          if [[ "$VERSION" =~ (alpha|beta|rc|dev|pre|a|b) ]]; then
+            echo "IS_DEV_TAG=true" >> $GITHUB_ENV
+            echo "Detected dev tag: $VERSION"
+            exit 0
+          fi
+
+          echo "IS_DEV_TAG=false" >> $GITHUB_ENV
+          echo "Detected stable tag: $VERSION"
+
+      - name: determine if release is needed
+        run: |
+          # If no changes are detected on the version file, we don't release.
+          CHANGES=${{ steps.filter.outputs.changes }}
+          echo "CHANGES: $CHANGES"
+          if [ "$CHANGES" = "[]" ]; then
+            echo "No changes detected"
+            echo "RELEASE_NEEDED=false" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          # If a stable tag is detected on a feature branch, we don't release.
+          if [ "${{ env.IS_DEV_TAG }}" = "false" ] && [ "${{ inputs.BRANCH }}" != "${{ env.MAIN_BRANCH }}" ]; then
+            echo "Stable tag detected on feature branch"
+            echo "RELEASE_NEEDED=false" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          # If a dev tag is detected on the main branch, we don't release.
+          if [ "${{ env.IS_DEV_TAG }}" = "true" ] && [ "${{ inputs.BRANCH }}" = "${{ env.MAIN_BRANCH }}" ]; then
+            echo "Dev tag detected on main branch"
+            echo "RELEASE_NEEDED=false" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          # Check if the version tag already exists
+          if git show-ref --tags --verify --quiet "refs/tags/${{ env.VERSION }}"; then
+            echo "Version tag ${{ env.VERSION }} already exists"
+            echo "RELEASE_NEEDED=false" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          echo "RELEASE_NEEDED=true" >> $GITHUB_ENV
+          echo "Release is needed"
+
+      - name: tag new version
+        if: ${{ env.RELEASE_NEEDED == 'true' }}
+        run: |
+          git tag ${{ env.VERSION }}
+          git push origin ${{ env.VERSION }}
+        working-directory: ./${{ inputs.REPOSITORY }}
+
+      - name: create release
+        if: ${{ env.RELEASE_NEEDED == 'true' }}
+        run: |
+          PRERELEASE_FLAG=""
+          if [ ${{ env.IS_DEV_TAG }} = true ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          gh release create $VERSION \
+          --verify-tag \
+          --generate-notes \
+          --title $VERSION $PRERELEASE_FLAG
+        working-directory: ./${{ inputs.REPOSITORY }}
+
+      - name: python - build binary wheel and source tarball
+        if: ${{ env.RELEASE_NEEDED == 'true' && inputs.LANGUAGE == 'python' }}
+        run: python -m build
+        working-directory: ./${{ inputs.REPOSITORY }}/${{ inputs.PACKAGE_LOCATION }}
+
+      - name: python - publish package distributions to PyPI
+        if: ${{ env.RELEASE_NEEDED == 'true' && inputs.LANGUAGE == 'python' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ./${{ inputs.REPOSITORY }}/${{ inputs.PACKAGE_LOCATION }}/dist
+
+      - name: notify slack
+        if: ${{ env.RELEASE_NEEDED == 'true' && env.IS_DEV_TAG == 'false' }}
+        run: |
+          export DATA="{\"text\":\"Release notification - ${{ inputs.PACKAGE_NAME }} ${{ env.VERSION }} (see <https://github.com/nextmv-io/${{ inputs.REPOSITORY }}/releases/${{ env.VERSION }}|release notes>)\"}"
+          curl -X POST -H 'Content-type: application/json' --data "$DATA" ${{ secrets.SLACK_URL_MISSION_CONTROL }}
