@@ -51,8 +51,9 @@ jobs:
   release:
     runs-on: ubuntu-latest
     outputs:
-      SHOULD_NOTIFY_SLACK: ${{ steps.set-outputs.outputs.SHOULD_NOTIFY_SLACK }}
       VERSION: ${{ steps.set-outputs.outputs.VERSION }}
+      RELEASE_NEEDED: ${{ steps.set-outputs.outputs.RELEASE_NEEDED }}
+      SHOULD_NOTIFY_SLACK: ${{ steps.set-outputs.outputs.SHOULD_NOTIFY_SLACK }}
     env:
       GH_TOKEN: ${{ github.token }}
       SSH_AUTH_SOCK: /tmp/ssh_agent.sock
@@ -207,6 +208,7 @@ jobs:
         id: set-outputs
         run: |
           echo "VERSION=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+          echo "RELEASE_NEEDED=${{ env.RELEASE_NEEDED }}" >> $GITHUB_OUTPUT
 
           # Set SHOULD_NOTIFY_SLACK based on release needed and stable version
           if [ "${{ env.RELEASE_NEEDED }}" = "true" ] && [ "${{ env.IS_DEV_TAG }}" = "false" ]; then
