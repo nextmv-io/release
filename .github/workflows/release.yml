@@ -36,6 +36,16 @@ on:
         type: string
         description: The file that contains the version
         required: true
+    outputs:
+      VERSION:
+        description: The version of the package to release
+        value: ${{ jobs.release.outputs.VERSION }}
+      RELEASE_NEEDED:
+        description: Whether the release is needed
+        value: ${{ jobs.release.outputs.RELEASE_NEEDED }}
+      SHOULD_NOTIFY_SLACK:
+        description: Whether the release should notify slack
+        value: ${{ jobs.release.outputs.SHOULD_NOTIFY_SLACK }}
     secrets:
       SLACK_URL_MISSION_CONTROL:
         description: The URL of the Slack channel to send the release notification to
