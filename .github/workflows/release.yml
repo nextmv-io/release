@@ -28,6 +28,11 @@ on:
         type: string
         description: The file that contains the version
         required: true
+      VERSION_PREFIX:
+        type: string
+        description: The prefix of the version
+        required: false
+        default: ""
     outputs:
       VERSION:
         description: The version of the package to release
@@ -123,16 +128,20 @@ jobs:
           echo "This is the version"
           echo $VERSION
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-        working-directory: ./${{ inputs.REPOSITORY }}
+        working-directory: ./${{ inputs.REPOSITORY }}/${{ inputs.PACKAGE_LOCATION }}
 
       - name: python - set the version
         if: ${{ inputs.LANGUAGE == 'python' }}
         run: |
           export VERSION="v$(hatch version)"
-          echo "This is the version"
+          echo "This is the version without the prefix"
           echo $VERSION
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-        working-directory: ./${{ inputs.REPOSITORY }}
+
+          export VERSION_WITH_PREFIX="${{ inputs.VERSION_PREFIX }}$VERSION"
+          echo "This is the version with the prefix"
+          echo $VERSION_WITH_PREFIX
+          echo "VERSION=$VERSION_WITH_PREFIX" >> $GITHUB_ENV
+        working-directory: ./${{ inputs.REPOSITORY }}/${{ inputs.PACKAGE_LOCATION }}
 
       - name: set IS_DEV_TAG flag
         run: |
