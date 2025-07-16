@@ -123,7 +123,7 @@ jobs:
           echo "This is the version"
           echo $VERSION
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-        working-directory: ./${{ inputs.REPOSITORY }}
+        working-directory: ./${{ inputs.REPOSITORY }}/${{ inputs.PACKAGE_LOCATION }}
 
       - name: python - set the version
         if: ${{ inputs.LANGUAGE == 'python' }}
@@ -132,7 +132,7 @@ jobs:
           echo "This is the version"
           echo $VERSION
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-        working-directory: ./${{ inputs.REPOSITORY }}
+        working-directory: ./${{ inputs.REPOSITORY }}/${{ inputs.PACKAGE_LOCATION }}
 
       - name: set IS_DEV_TAG flag
         run: |
