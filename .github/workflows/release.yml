@@ -77,6 +77,7 @@ jobs:
       MAIN_BRANCH: develop
     permissions:
       contents: write # Required for creating releases and tags
+      pull-requests: write
     steps:
       - name: configure git with the bot credentials
         run: |
