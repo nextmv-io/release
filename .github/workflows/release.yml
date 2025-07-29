@@ -75,6 +75,7 @@ jobs:
       GO_VERSION: 1.24
       VERSION: ""
       MAIN_BRANCH: develop
+      BRANCH: ${{ inputs.BRANCH }}
     permissions:
       contents: write # Required for creating releases and tags
       pull-requests: write
