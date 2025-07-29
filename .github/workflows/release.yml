@@ -76,7 +76,6 @@ jobs:
       VERSION: ""
       MAIN_BRANCH: develop
       BRANCH: ${{ inputs.BRANCH }}
-      ACTOR: ${{ github.actor }}
     permissions:
       contents: write # Required for creating releases and tags
       pull-requests: write
