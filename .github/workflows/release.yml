@@ -173,7 +173,7 @@ jobs:
 
       - name: set IS_DEV_TAG flag
         run: |
-          if [[ "$VERSION" =~ (alpha|beta|rc|dev|pre|a|b) ]]; then
+          if [[ "$VERSION" =~ (alpha|beta|rc|dev|pre)([^a-z]|$) ]] || [[ "$VERSION" =~ [-\.]([ab][0-9]+)([^a-z]|$) ]]; then
             echo "IS_DEV_TAG=true" >> $GITHUB_ENV
             echo "Detected dev tag: $VERSION"
             exit 0
