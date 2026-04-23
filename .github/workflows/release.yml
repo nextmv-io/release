@@ -229,14 +229,20 @@ jobs:
         if: ${{ env.RELEASE_NEEDED == 'true' }}
         run: |
           PRERELEASE_FLAG=""
+          NOTES_START_TAG_FLAG=""
           if [ ${{ env.IS_DEV_TAG }} = true ]; then
             PRERELEASE_FLAG="--prerelease"
+          else
+            LAST_FULL_RELEASE=$(gh release list --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName')
+            if [ -n "$LAST_FULL_RELEASE" ]; then
+              NOTES_START_TAG_FLAG="--notes-start-tag $LAST_FULL_RELEASE"
+            fi
           fi
 
           gh release create $VERSION \
           --verify-tag \
           --generate-notes \
-          --title $VERSION $PRERELEASE_FLAG
+          --title $VERSION $PRERELEASE_FLAG $NOTES_START_TAG_FLAG
         working-directory: ./${{ inputs.REPOSITORY }}
 
       - name: run post-release command
