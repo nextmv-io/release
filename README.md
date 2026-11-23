@@ -118,8 +118,16 @@ The following secrets must be available in your repository (typically inherited
 from the organization):
 
 - `SLACK_URL_MISSION_CONTROL`: Slack webhook URL for release notifications
-- `NEXTMVBOT_SSH_KEY`: SSH key for the nextmv-bot user
-- `NEXTMVBOT_SIGNING_KEY`: GPG signing key for the nextmv-bot user
+
+## Required Permissions
+
+The workflow checks out the repository and pushes the version tag with the
+workflow's `GITHUB_TOKEN`, so the calling job must grant:
+
+```yaml
+permissions:
+  contents: write
+```
 
 ## Version File Requirements
 
