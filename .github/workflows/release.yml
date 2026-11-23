@@ -71,7 +71,6 @@ jobs:
       BRANCH: ${{ inputs.BRANCH }}
     permissions:
       contents: write # Required for creating releases and tags
-      pull-requests: write
     steps:
       # Check out with the workflow's own GITHUB_TOKEN (needs `contents: write`).
       # Credentials are kept so that the tag (and anything pushed by the
