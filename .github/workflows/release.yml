@@ -52,12 +52,6 @@ on:
       SLACK_URL_MISSION_CONTROL:
         description: The URL of the Slack channel to send the release notification to
         required: true
-      NEXTMVBOT_SSH_KEY:
-        description: The SSH key for the nextmv-bot user
-        required: true
-      NEXTMVBOT_SIGNING_KEY:
-        description: The signing key for the nextmv-bot user
-        required: true
 
 jobs:
   release:
@@ -68,7 +62,6 @@ jobs:
       SHOULD_NOTIFY_SLACK: ${{ steps.set-outputs.outputs.SHOULD_NOTIFY_SLACK }}
     env:
       GH_TOKEN: ${{ github.token }}
-      SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       RELEASE_NEEDED: true
       IS_DEV_TAG: true
       PYTHON_VERSION: 3.13
@@ -80,24 +73,23 @@ jobs:
       contents: write # Required for creating releases and tags
       pull-requests: write
     steps:
-      - name: configure git with the bot credentials
+      # Check out with the workflow's own GITHUB_TOKEN (needs `contents: write`).
+      # Credentials are kept so that the tag (and anything pushed by the
+      # post-release command) can be pushed. Full history is needed for the tag
+      # check and the changed-paths filter.
+      - name: check out the repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          repository: nextmv-io/${{ inputs.REPOSITORY }}
+          ref: ${{ inputs.BRANCH }}
+          path: ${{ inputs.REPOSITORY }}
+          fetch-depth: 0
+          persist-credentials: true # zizmor: ignore[artipacked]
+
+      - name: configure git identity
         run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-          ssh-add - <<< "${{ secrets.NEXTMVBOT_SSH_KEY }}"
-
-          echo "${{ secrets.NEXTMVBOT_SIGNING_KEY }}" > ~/.ssh/signing.key
-          chmod 600 ~/.ssh/signing.key
-
-          git config --global user.name "nextmv-bot"
-          git config --global user.email "tech+gh-nextmv-bot@nextmv.io"
-          git config --global gpg.format ssh
-          git config --global user.signingkey ~/.ssh/signing.key
-
-          git clone git@github.com:nextmv-io/${{ inputs.REPOSITORY }}.git
-          cd ${{ inputs.REPOSITORY }}
-          git switch ${{ inputs.BRANCH }}
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: python - set up
         if: ${{ inputs.LANGUAGE == 'python' }}
