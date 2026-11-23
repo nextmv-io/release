@@ -101,6 +101,9 @@ jobs:
 | `PACKAGE_NAME` | ✅ | The name of the package to release | `nextpipe` |
 | `PACKAGE_LOCATION` | ✅ | The location of the package to release | `.` or `packages/core` |
 | `VERSION_FILE` | ✅ | The file that contains the version | `__about__.py` or `VERSION` |
+| `VERSION_PREFIX` | ❌ | Prefix prepended to the version tag | `nextmv-gurobipy-` |
+| `POST_RELEASE_COMMAND` | ❌ | Command run after the release is created | `bash scripts/post-release.sh` |
+| `EXTRA_TAG_PREFIXES` | ❌ | Space-separated prefixes for extra tags on the same commit (e.g. nested Go modules) | `measure/osrm/ measure/here/` |
 
 ## Outputs
 

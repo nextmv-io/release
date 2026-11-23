@@ -38,6 +38,13 @@ on:
         description: A command to run after the release is created
         required: false
         default: ""
+      EXTRA_TAG_PREFIXES:
+        type: string
+        description: >-
+          Space-separated prefixes for additional tags created on the same
+          commit (e.g. nested Go modules: "measure/osrm/ measure/here/")
+        required: false
+        default: ""
     outputs:
       VERSION:
         description: The version of the package to release
@@ -211,9 +218,18 @@ jobs:
 
       - name: tag new version
         if: ${{ env.RELEASE_NEEDED == 'true' }}
+        env:
+          EXTRA_TAG_PREFIXES: ${{ inputs.EXTRA_TAG_PREFIXES }}
         run: |
-          git tag ${{ env.VERSION }}
-          git push origin ${{ env.VERSION }}
+          TAGS=("$VERSION")
+          for prefix in $EXTRA_TAG_PREFIXES; do
+            TAGS+=("${prefix}${VERSION}")
+          done
+          for tag in "${TAGS[@]}"; do
+            echo "Creating tag $tag"
+            git tag "$tag"
+          done
+          git push --atomic origin "${TAGS[@]}"
         working-directory: ./${{ inputs.REPOSITORY }}
 
       - name: create release
